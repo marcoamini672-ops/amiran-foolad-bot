@@ -1,7 +1,7 @@
 import json
-from datetime import datetime
+import os
 
-from telegram import Update, Bot, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
@@ -12,19 +12,20 @@ from telegram.ext import (
 )
 
 # ================== تنظیمات ==================
-TOKEN = "8882685860:AAEaRbNLhzUDsOzNvH9B0Sb-vCtX6po8Xeo"  
+TOKEN = "8882685860:AAEaRbNLhzUDsOzNvH9B0Sb-vCtX6po8Xeo"
 CHANNEL = "@Amiran_fooladnovin"
-ADMIN_ID = "@Amiran_foolad"
-
-INSTAGRAM = "https://instagram.com/AMIRAN_FOOLADNV"
-CHANNEL_LINK = "https://t.me/Amiran_foolad"
+ADMIN_ID = 6555434531
 
 user_state = {}
 
-bot = Bot(token=TOKEN)
-
 # ================== فایل قیمت ==================
+def ensure_file():
+    if not os.path.exists("prices.json"):
+        with open("prices.json", "w", encoding="utf-8") as f:
+            json.dump({}, f, ensure_ascii=False)
+
 def load_prices():
+    ensure_file()
     with open("prices.json", "r", encoding="utf-8") as f:
         return json.load(f)
 
@@ -71,8 +72,13 @@ async def size_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
+    user_id = query.from_user.id
+
+    if user_id not in user_state:
+        user_state[user_id] = {}
+
     size = query.data.replace("size_", "")
-    user_state[query.from_user.id]["size"] = size
+    user_state[user_id]["size"] = size
 
     await query.message.reply_text("💰 قیمت رو فقط عدد بفرست")
 
@@ -88,13 +94,11 @@ async def handle_price(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     price = update.message.text
 
-    product = user_state[user_id]["product"]def load_prices():
-    if not os.path.exists("prices.json"):
-        with open("prices.json", "w", encoding="utf-8") as f:
-            f.write("{}")
-    with open("prices.json", "r", encoding="utf-8") as f:
-        return json.load(f)
-    size = user_state[user_id]["size"]
+    product = user_state[user_id].get("product")
+    size = user_state[user_id].get("size")
+
+    if not product or not size:
+        return
 
     key = f"{product}{size}"
 
@@ -109,17 +113,14 @@ def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("panel", panel))
-    app.add_handler(CallbackQueryHandler(button))
-    app.add_handler(CallbackQueryHandler(size_button))
+    app.add_handler(CallbackQueryHandler(button, pattern="^(sepri|rebar)$"))
+    app.add_handler(CallbackQueryHandler(size_button, pattern="^size_"))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_price))
+
+    ensure_file()
 
     print("Bot is running...")
     app.run_polling()
 
 if __name__ == "__main__":
     main()
-    import os
-
-if not os.path.exists("prices.json"):
-    with open("prices.json", "w") as f:
-        f.write("{}")
