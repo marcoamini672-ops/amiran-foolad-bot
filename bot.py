@@ -88,7 +88,12 @@ async def handle_price(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     price = update.message.text
 
-    product = user_state[user_id]["product"]
+    product = user_state[user_id]["product"]def load_prices():
+    if not os.path.exists("prices.json"):
+        with open("prices.json", "w", encoding="utf-8") as f:
+            f.write("{}")
+    with open("prices.json", "r", encoding="utf-8") as f:
+        return json.load(f)
     size = user_state[user_id]["size"]
 
     key = f"{product}{size}"
@@ -113,3 +118,8 @@ def main():
 
 if __name__ == "__main__":
     main()
+    import os
+
+if not os.path.exists("prices.json"):
+    with open("prices.json", "w") as f:
+        f.write("{}")
